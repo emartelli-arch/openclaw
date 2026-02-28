@@ -54,6 +54,8 @@ export async function handleSubagentsSpawnAction(
       agentGroupId: params.sessionEntry?.groupId ?? null,
       agentGroupChannel: params.sessionEntry?.groupChannel ?? null,
       agentGroupSpace: params.sessionEntry?.space ?? null,
+      mediaPaths: params.ctx.MediaPaths,
+      mediaTypes: params.ctx.MediaTypes,
     },
   );
   if (result.status === "accepted") {

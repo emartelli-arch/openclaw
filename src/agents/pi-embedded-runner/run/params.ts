@@ -63,6 +63,8 @@ export type RunEmbeddedPiAgentParams = {
   agentDir?: string;
   config?: OpenClawConfig;
   skillsSnapshot?: SkillSnapshot;
+  mediaPaths?: string[];
+  mediaTypes?: string[];
   prompt: string;
   images?: ImageContent[];
   /** Optional client-provided tools (OpenResponses hosted tools). */

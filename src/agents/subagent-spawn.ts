@@ -49,6 +49,8 @@ export type SpawnSubagentContext = {
   agentGroupChannel?: string | null;
   agentGroupSpace?: string | null;
   requesterAgentIdOverride?: string;
+  mediaPaths?: string[];
+  mediaTypes?: string[];
 };
 
 export const SUBAGENT_SPAWN_ACCEPTED_NOTE =
@@ -423,6 +425,8 @@ export async function spawnSubagentDirect(
         timeout: runTimeoutSeconds,
         label: label || undefined,
         spawnedBy: spawnedByKey,
+        mediaPaths: ctx.mediaPaths?.length ? ctx.mediaPaths : undefined,
+        mediaTypes: ctx.mediaTypes?.length ? ctx.mediaTypes : undefined,
         groupId: ctx.agentGroupId ?? undefined,
         groupChannel: ctx.agentGroupChannel ?? undefined,
         groupSpace: ctx.agentGroupSpace ?? undefined,

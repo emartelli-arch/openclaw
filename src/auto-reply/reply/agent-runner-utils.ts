@@ -207,6 +207,12 @@ export function buildEmbeddedContextFromTemplate(params: {
       to: params.sessionCtx.To,
     }),
     messageThreadId: params.sessionCtx.MessageThreadId ?? undefined,
+    mediaPaths: Array.isArray(params.sessionCtx.MediaPaths)
+      ? params.sessionCtx.MediaPaths
+      : undefined,
+    mediaTypes: Array.isArray(params.sessionCtx.MediaTypes)
+      ? params.sessionCtx.MediaTypes
+      : undefined,
     // Provider threading context for tool auto-injection
     ...buildThreadingToolContext({
       sessionCtx: params.sessionCtx,

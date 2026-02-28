@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { listAgentIds } from "../../agents/agent-scope.js";
 import { BARE_SESSION_RESET_PROMPT } from "../../auto-reply/reply/session-reset-prompt.js";
+import type { MsgContext } from "../../auto-reply/templating.js";
 import { agentCommand } from "../../commands/agent.js";
 import { loadConfig } from "../../config/config.js";
 import {
@@ -17,6 +18,7 @@ import {
   resolveAgentOutboundTarget,
 } from "../../infra/outbound/agent-delivery.js";
 import { resolveMessageChannelSelection } from "../../infra/outbound/channel-selection.js";
+import { applyMediaUnderstanding } from "../../media-understanding/apply.js";
 import { classifySessionKeyShape, normalizeAgentId } from "../../routing/session-key.js";
 import { defaultRuntime } from "../../runtime.js";
 import { normalizeInputProvenance, type InputProvenance } from "../../sessions/input-provenance.js";
@@ -196,6 +198,8 @@ export const agentHandlers: GatewayRequestHandlers = {
       bestEffortDeliver?: boolean;
       label?: string;
       spawnedBy?: string;
+      mediaPaths?: string[];
+      mediaTypes?: string[];
       inputProvenance?: InputProvenance;
     };
     const cfg = loadConfig();
@@ -588,6 +592,23 @@ export const agentHandlers: GatewayRequestHandlers = {
       payload: accepted,
     });
     respond(true, accepted, undefined, { runId });
+
+    // Transcribe audio forwarded from a parent-session subagent spawn (e.g. Telegram audio).
+    if (Array.isArray(request.mediaPaths) && request.mediaPaths.length > 0) {
+      const mediaCtx = {
+        Body: message,
+        MediaPaths: request.mediaPaths,
+        MediaTypes: request.mediaTypes,
+      } as unknown as MsgContext;
+      try {
+        await applyMediaUnderstanding({ ctx: mediaCtx, cfg: cfgForAgent ?? cfg });
+        if (typeof mediaCtx.Body === "string" && mediaCtx.Body) {
+          message = mediaCtx.Body;
+        }
+      } catch {
+        // Best-effort: proceed with original message if transcription fails.
+      }
+    }
 
     const resolvedThreadId = explicitThreadId ?? deliveryPlan.resolvedThreadId;
 

@@ -493,6 +493,8 @@ export function createOpenClawCodingTools(options?: {
       requesterAgentIdOverride: agentId,
       requesterSenderId: options?.senderId,
       senderIsOwner: options?.senderIsOwner,
+      mediaPaths: options?.mediaPaths,
+      mediaTypes: options?.mediaTypes,
     }),
   ];
   const toolsForMessageProvider = applyMessageProviderToolPolicy(tools, options?.messageProvider);

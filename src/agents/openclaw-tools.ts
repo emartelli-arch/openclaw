@@ -69,6 +69,8 @@ export function createOpenClawTools(options?: {
   requesterSenderId?: string | null;
   /** Whether the requesting sender is an owner. */
   senderIsOwner?: boolean;
+  mediaPaths?: string[];
+  mediaTypes?: string[];
 }): AnyAgentTool[] {
   const workspaceDir = resolveWorkspaceRoot(options?.workspaceDir);
   const imageTool = options?.agentDir?.trim()
@@ -162,6 +164,8 @@ export function createOpenClawTools(options?: {
       agentGroupSpace: options?.agentGroupSpace,
       sandboxed: options?.sandboxed,
       requesterAgentIdOverride: options?.requesterAgentIdOverride,
+      mediaPaths: options?.mediaPaths,
+      mediaTypes: options?.mediaTypes,
     }),
     createSubagentsTool({
       agentSessionKey: options?.agentSessionKey,

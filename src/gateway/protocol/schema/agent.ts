@@ -92,6 +92,8 @@ export const AgentParamsSchema = Type.Object(
     idempotencyKey: NonEmptyString,
     label: Type.Optional(SessionLabelString),
     spawnedBy: Type.Optional(Type.String()),
+    mediaPaths: Type.Optional(Type.Array(Type.String())),
+    mediaTypes: Type.Optional(Type.Array(Type.String())),
   },
   { additionalProperties: false },
 );
