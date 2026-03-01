@@ -14,6 +14,36 @@ import type { GetReplyOptions } from "./types.js";
 
 export type DispatchInboundResult = DispatchFromConfigResult;
 
+const SESSION_DISPATCH_LOCKS = new Map<string, Promise<void>>();
+
+async function withSessionDispatchLock<T>(
+  sessionKeyRaw: string | undefined,
+  run: () => Promise<T>,
+): Promise<T> {
+  const sessionKey = (sessionKeyRaw ?? "").trim();
+  if (!sessionKey) {
+    return await run();
+  }
+
+  const previous = SESSION_DISPATCH_LOCKS.get(sessionKey) ?? Promise.resolve();
+  let releaseCurrent: (() => void) | undefined;
+  const current = new Promise<void>((resolve) => {
+    releaseCurrent = resolve;
+  });
+  const tail = previous.catch(() => undefined).then(() => current);
+  SESSION_DISPATCH_LOCKS.set(sessionKey, tail);
+
+  await previous.catch(() => undefined);
+  try {
+    return await run();
+  } finally {
+    releaseCurrent?.();
+    if (SESSION_DISPATCH_LOCKS.get(sessionKey) === tail) {
+      SESSION_DISPATCH_LOCKS.delete(sessionKey);
+    }
+  }
+}
+
 export async function withReplyDispatcher<T>(params: {
   dispatcher: ReplyDispatcher;
   run: () => Promise<T>;
@@ -40,17 +70,19 @@ export async function dispatchInboundMessage(params: {
   replyResolver?: typeof import("./reply.js").getReplyFromConfig;
 }): Promise<DispatchInboundResult> {
   const finalized = finalizeInboundContext(params.ctx);
-  return await withReplyDispatcher({
-    dispatcher: params.dispatcher,
-    run: () =>
-      dispatchReplyFromConfig({
-        ctx: finalized,
-        cfg: params.cfg,
-        dispatcher: params.dispatcher,
-        replyOptions: params.replyOptions,
-        replyResolver: params.replyResolver,
-      }),
-  });
+  return await withSessionDispatchLock(finalized.SessionKey, async () =>
+    withReplyDispatcher({
+      dispatcher: params.dispatcher,
+      run: () =>
+        dispatchReplyFromConfig({
+          ctx: finalized,
+          cfg: params.cfg,
+          dispatcher: params.dispatcher,
+          replyOptions: params.replyOptions,
+          replyResolver: params.replyResolver,
+        }),
+    }),
+  );
 }
 
 export async function dispatchInboundMessageWithBufferedDispatcher(params: {

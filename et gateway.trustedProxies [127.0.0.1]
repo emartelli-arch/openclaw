@@ -1,0 +1,21 @@
+[0;1;32m●[0m openclaw-gateway.service - OpenClaw Gateway (v2026.2.27)
+     Loaded: loaded (]8;;file://srv950268/root/.config/systemd/user/openclaw-gateway.service/root/.config/systemd/user/openclaw-gateway.service]8;;; [0;1;32menabled[0m; preset: [0;1;32menabled[0m)
+     Active: [0;1;32mactive (running)[0m since Sat 2026-02-28 23:35:37 UTC; 1min 41s ago
+   Main PID: 3279491 (openclaw)
+      Tasks: 18 (limit: 9485)
+     Memory: 320.9M (peak: 396.2M)
+        CPU: 6.288s
+     CGroup: /user.slice/user-0.slice/user@0.service/app.slice/openclaw-gateway.service
+             ├─[0;38;5;245m3279491 openclaw[0m
+             └─[0;38;5;245m3279501 openclaw-gateway[0m
+
+Feb 28 23:36:14 srv950268 node[3279501]: 2026-02-28T23:36:14.131Z [ws] closed before connect conn=e4891e4e-77a0-4054-9aba-a806bfd496f7 remote=127.0.0.1 fwd=n/a origin=https://31.97.218.90:8443 host=31.97.218.90 ua=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 code=1008 reason=unauthorized: gateway token mismatch (open the dashboard URL and paste the token in Control UI settings)
+Feb 28 23:36:30 srv950268 node[3279501]: 2026-02-28T23:36:30.807Z [ws] Proxy headers detected from untrusted address. Connection will not be treated as local. Configure gateway.trustedProxies to restore local client detection behind your proxy.
+Feb 28 23:36:30 srv950268 node[3279501]: 2026-02-28T23:36:30.964Z [ws] unauthorized conn=fadbcd41-eb45-41bd-b29f-13e1372bf84a remote=127.0.0.1 client=openclaw-control-ui webchat vdev reason=token_mismatch
+Feb 28 23:36:31 srv950268 node[3279501]: 2026-02-28T23:36:31.119Z [ws] closed before connect conn=fadbcd41-eb45-41bd-b29f-13e1372bf84a remote=127.0.0.1 fwd=n/a origin=https://31.97.218.90:8443 host=31.97.218.90 ua=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 code=1008 reason=unauthorized: gateway token mismatch (open the dashboard URL and paste the token in Control UI settings)
+Feb 28 23:36:47 srv950268 node[3279501]: 2026-02-28T23:36:47.827Z [ws] Proxy headers detected from untrusted address. Connection will not be treated as local. Configure gateway.trustedProxies to restore local client detection behind your proxy.
+Feb 28 23:36:47 srv950268 node[3279501]: 2026-02-28T23:36:47.982Z [ws] unauthorized conn=b31a3989-76a0-4a7e-9a6e-363461d5c785 remote=127.0.0.1 client=openclaw-control-ui webchat vdev reason=token_mismatch
+Feb 28 23:36:48 srv950268 node[3279501]: 2026-02-28T23:36:48.136Z [ws] closed before connect conn=b31a3989-76a0-4a7e-9a6e-363461d5c785 remote=127.0.0.1 fwd=n/a origin=https://31.97.218.90:8443 host=31.97.218.90 ua=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 code=1008 reason=unauthorized: gateway token mismatch (open the dashboard URL and paste the token in Control UI settings)
+Feb 28 23:37:04 srv950268 node[3279501]: 2026-02-28T23:37:04.804Z [ws] Proxy headers detected from untrusted address. Connection will not be treated as local. Configure gateway.trustedProxies to restore local client detection behind your proxy.
+Feb 28 23:37:04 srv950268 node[3279501]: 2026-02-28T23:37:04.961Z [ws] unauthorized conn=1aa26004-56c8-4f77-888c-f2a5f76f13da remote=127.0.0.1 client=openclaw-control-ui webchat vdev reason=token_mismatch
+Feb 28 23:37:05 srv950268 node[3279501]: 2026-02-28T23:37:05.114Z [ws] closed before connect conn=1aa26004-56c8-4f77-888c-f2a5f76f13da remote=127.0.0.1 fwd=n/a origin=https://31.97.218.90:8443 host=31.97.218.90 ua=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 code=1008 reason=unauthorized: gateway token mismatch (open the dashboard URL and paste the token in Control UI settings)

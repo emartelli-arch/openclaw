@@ -43,11 +43,24 @@ Common commands
 - Gmail draft: `gog gmail drafts create --to a@b.com --subject "Hi" --body-file ./message.txt`
 - Gmail send draft: `gog gmail drafts send <draftId>`
 - Gmail reply: `gog gmail send --to a@b.com --subject "Re: Hi" --body "Reply" --reply-to-message-id <msgId>`
+- Calendar list my calendars (to get calendarId): `gog calendar calendars`
 - Calendar list events: `gog calendar events <calendarId> --from <iso> --to <iso>`
 - Calendar create event: `gog calendar create <calendarId> --summary "Title" --from <iso> --to <iso>`
 - Calendar create with color: `gog calendar create <calendarId> --summary "Title" --from <iso> --to <iso> --event-color 7`
 - Calendar update event: `gog calendar update <calendarId> <eventId> --summary "New Title" --event-color 4`
 - Calendar show colors: `gog calendar colors`
+
+Calendar Contract (read before executing any calendar command)
+
+- **Do not use trial-and-error. Do not call `--help` at runtime.**
+- `<calendarId>` = ALWAYS `primary`. Never infer from command output.
+- `gog calendar events` / `list` / `ls` → returns **EVENT rows** (event IDs). NOT calendar IDs.
+- `gog calendar create` correct flags: `--summary`, `--from`, `--to`
+- Prohibited (do not exist): `--title`, `--start`, `--end`
+- `gog calendar delete` → always include `--force` (non-interactive environment)
+- Timezone: America/Sao_Paulo = `-03:00`; always suffix datetimes with `-03:00`
+- Wrapper scripts enforce this contract: `gog-cal-create`, `gog-cal-delete`, `gog-cal-events`
+- Smoke test: `bash ~/.openclaw/workspace/scripts/calendar_smoke_test.sh`
 - Drive search: `gog drive search "query" --max 10`
 - Contacts: `gog contacts list --max 20`
 - Sheets get: `gog sheets get <sheetId> "Tab!A1:D10" --json`

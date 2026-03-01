@@ -69,6 +69,45 @@ export type AgentRunLoopResult =
     }
   | { kind: "final"; payload: ReplyPayload };
 
+function logLlmCall(params: {
+  correlationId: string;
+  sessionKey?: string;
+  provider: string;
+  model: string;
+}): void {
+  defaultRuntime.log(
+    `[llm-call] timestamp=${new Date().toISOString()} correlationId=${params.correlationId} sessionKey=${params.sessionKey ?? ""} provider=${params.provider} model=${params.model}`,
+  );
+}
+
+function buildOperationalErrorPayload(params: {
+  correlationId: string;
+  code: string;
+  message: string;
+  details?: string;
+}): ReplyPayload {
+  return {
+    isError: true,
+    text: [
+      "```json",
+      JSON.stringify(
+        {
+          error: {
+            code: params.code,
+            message: params.message,
+            ...(params.details ? { details: params.details } : {}),
+            correlationId: params.correlationId,
+            timestamp: new Date().toISOString(),
+          },
+        },
+        null,
+        2,
+      ),
+      "```",
+    ].join("\n"),
+  };
+}
+
 export async function runAgentTurnWithFallback(params: {
   commandBody: string;
   followupRun: FollowupRun;
@@ -97,7 +136,6 @@ export async function runAgentTurnWithFallback(params: {
   storePath?: string;
   resolvedVerboseLevel: VerboseLevel;
 }): Promise<AgentRunLoopResult> {
-  const TRANSIENT_HTTP_RETRY_DELAY_MS = 2_500;
   let didLogHeartbeatStrip = false;
   let autoCompactionCompleted = false;
   // Track payloads sent directly (not via pipeline) during tool flush to avoid duplicates.
@@ -124,7 +162,6 @@ export async function runAgentTurnWithFallback(params: {
   let fallbackModel = params.followupRun.run.model;
   let fallbackAttempts: RuntimeFallbackAttempt[] = [];
   let didResetAfterCompactionFailure = false;
-  let didRetryTransientHttpError = false;
 
   while (true) {
     try {
@@ -182,7 +219,16 @@ export async function runAgentTurnWithFallback(params: {
       const onToolResult = params.opts?.onToolResult;
       const fallbackResult = await runWithModelFallback({
         ...resolveModelFallbackOptions(params.followupRun.run),
+        // Enforce single-inference policy for each inbound message.
+        // This disables model/provider fallback retries for the active turn.
+        fallbacksOverride: [],
         run: (provider, model) => {
+          logLlmCall({
+            correlationId: runId,
+            sessionKey: params.sessionKey,
+            provider,
+            model,
+          });
           // Notify that model selection is complete (including after fallback).
           // This allows responsePrefix template interpolation with the actual model.
           params.opts?.onModelSelected?.({
@@ -548,37 +594,32 @@ export async function runAgentTurnWithFallback(params: {
         };
       }
 
-      if (isTransientHttp && !didRetryTransientHttpError) {
-        didRetryTransientHttpError = true;
-        // Retry the full runWithModelFallback() cycle — transient errors
-        // (502/521/etc.) typically affect the whole provider, so falling
-        // back to an alternate model first would not help. Instead we wait
-        // and retry the complete primary→fallback chain.
-        defaultRuntime.error(
-          `Transient HTTP provider error before reply (${message}). Retrying once in ${TRANSIENT_HTTP_RETRY_DELAY_MS}ms.`,
-        );
-        await new Promise<void>((resolve) => {
-          setTimeout(resolve, TRANSIENT_HTTP_RETRY_DELAY_MS);
-        });
-        continue;
-      }
-
       defaultRuntime.error(`Embedded agent failed before reply: ${message}`);
       const safeMessage = isTransientHttp
         ? sanitizeUserFacingText(message, { errorContext: true })
         : message;
       const trimmedMessage = safeMessage.replace(/\.\s*$/, "");
-      const fallbackText = isContextOverflow
-        ? "⚠️ Context overflow — prompt too large for this model. Try a shorter message or a larger-context model."
+      const code = isContextOverflow
+        ? "LLM_CONTEXT_OVERFLOW"
         : isRoleOrderingError
-          ? "⚠️ Message ordering conflict - please try again. If this persists, use /new to start a fresh session."
-          : `⚠️ Agent failed before reply: ${trimmedMessage}.\nLogs: openclaw logs --follow`;
+          ? "LLM_ROLE_ORDERING_CONFLICT"
+          : isTransientHttp
+            ? "LLM_TRANSIENT_HTTP_ERROR"
+            : "LLM_OPERATIONAL_ERROR";
+      const fallbackMessage = isContextOverflow
+        ? "Context overflow: prompt too large for this model."
+        : isRoleOrderingError
+          ? "Message ordering conflict."
+          : `Agent failed before reply: ${trimmedMessage}`;
 
       return {
         kind: "final",
-        payload: {
-          text: fallbackText,
-        },
+        payload: buildOperationalErrorPayload({
+          correlationId: runId,
+          code,
+          message: fallbackMessage,
+          details: "Logs: openclaw logs --follow",
+        }),
       };
     }
   }

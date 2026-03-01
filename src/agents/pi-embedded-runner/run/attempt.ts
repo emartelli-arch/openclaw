@@ -88,6 +88,7 @@ import {
 import { getDmHistoryLimitFromSessionKey, limitHistoryTurns } from "../history.js";
 import { log } from "../logger.js";
 import { buildModelAliasLines } from "../model.js";
+import { isOpenAICompatApi, wrapStreamFnWithRateLimitRetry } from "../openai-rate-limit-retry.js";
 import {
   clearActiveEmbeddedRun,
   type EmbeddedPiQueueHandle,
@@ -964,6 +965,14 @@ export async function runEmbeddedAttempt(
       // pi-agent-core dispatches tool calls with exact string matching, so normalize
       // names on the live response stream before tool execution.
       activeSession.agent.streamFn = wrapStreamFnTrimToolCallNames(activeSession.agent.streamFn);
+
+      // Wrap OpenAI-compatible providers with exponential-backoff retry on 429 rate limits.
+      if (isOpenAICompatApi(params.model.api)) {
+        activeSession.agent.streamFn = wrapStreamFnWithRateLimitRetry(
+          activeSession.agent.streamFn,
+          { provider: params.provider, runId: params.runId },
+        );
+      }
 
       if (anthropicPayloadLogger) {
         activeSession.agent.streamFn = anthropicPayloadLogger.wrapStreamFn(

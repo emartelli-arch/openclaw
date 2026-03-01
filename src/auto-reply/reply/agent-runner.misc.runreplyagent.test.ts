@@ -177,7 +177,7 @@ describe("runReplyAgent onAgentRunStart", () => {
 
     expect(onAgentRunStart).not.toHaveBeenCalled();
     expect(result).toMatchObject({
-      text: expect.stringContaining('No API key found for provider "anthropic".'),
+      text: expect.stringContaining('"code": "LLM_OPERATIONAL_ERROR"'),
     });
   });
 
@@ -1274,7 +1274,7 @@ describe("runReplyAgent fallback reasoning tags", () => {
     expect(call?.enforceFinalTag).toBe(true);
   });
 
-  it("enforces <final> during memory flush on fallback providers", async () => {
+  it("does not execute memory flush turns under single-inference policy", async () => {
     runEmbeddedPiAgentMock.mockImplementation(async (params: EmbeddedPiAgentParams) => {
       if (params.prompt?.includes("Pre-compaction memory flush.")) {
         return { payloads: [], meta: {} };
@@ -1300,9 +1300,8 @@ describe("runReplyAgent fallback reasoning tags", () => {
       (params as EmbeddedPiAgentParams | undefined)?.prompt?.includes(
         "Pre-compaction memory flush.",
       ),
-    )?.[0] as EmbeddedPiAgentParams | undefined;
-
-    expect(flushCall?.enforceFinalTag).toBe(true);
+    );
+    expect(flushCall).toBeUndefined();
   });
 });
 
@@ -1415,18 +1414,13 @@ describe("runReplyAgent response usage footer", () => {
 });
 
 describe("runReplyAgent transient HTTP retry", () => {
-  it("retries once after transient 521 HTML failure and then succeeds", async () => {
+  it("does not retry after transient 521 HTML failure", async () => {
     vi.useFakeTimers();
-    runEmbeddedPiAgentMock
-      .mockRejectedValueOnce(
-        new Error(
-          `521 <!DOCTYPE html><html lang="en-US"><head><title>Web server is down</title></head><body>Cloudflare</body></html>`,
-        ),
-      )
-      .mockResolvedValueOnce({
-        payloads: [{ text: "Recovered response" }],
-        meta: {},
-      });
+    runEmbeddedPiAgentMock.mockRejectedValueOnce(
+      new Error(
+        `521 <!DOCTYPE html><html lang="en-US"><head><title>Web server is down</title></head><body>Cloudflare</body></html>`,
+      ),
+    );
 
     const typing = createMockTypingController();
     const sessionCtx = {
@@ -1481,15 +1475,11 @@ describe("runReplyAgent transient HTTP retry", () => {
       typingMode: "instant",
     });
 
-    await vi.advanceTimersByTimeAsync(2_500);
     const result = await runPromise;
 
-    expect(runEmbeddedPiAgentMock).toHaveBeenCalledTimes(2);
-    expect(runtimeErrorMock).toHaveBeenCalledWith(
-      expect.stringContaining("Transient HTTP provider error before reply"),
-    );
+    expect(runEmbeddedPiAgentMock).toHaveBeenCalledTimes(1);
 
     const payload = Array.isArray(result) ? result[0] : result;
-    expect(payload?.text).toContain("Recovered response");
+    expect(payload?.text).toContain('"code": "LLM_TRANSIENT_HTTP_ERROR"');
   });
 });
